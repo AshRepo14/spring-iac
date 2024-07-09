@@ -1,0 +1,135 @@
+pipeline {
+    agent { label 'dev' }
+    tools {
+        maven 'Mvn' // Maven tool configuration
+    }
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+    }
+    stages {
+        stage('Get Code from GitHub') {
+            steps {
+                echo "========================//pulling git repo//==============================="
+                git branch: 'main', url: 'https://github.com/AshRepo14/prj_backend.git'
+            }
+        }
+        stage('Setup Environment') {
+            steps {
+                echo "======================//setting up environment//============================"
+                sh 'sudo apt-get update'
+                sh 'sudo apt-get install -y openjdk-21-jdk'
+                sh 'sudo apt-get install -y maven'
+                sh 'docker pull hadolint/hadolint'
+            }
+        }
+        stage('Maven Operation') {
+            steps {
+                echo "==============//running mvn-(clean,compile,test,package)//=================="
+                sh "mvn --version"
+                sh "mvn clean"
+                sh "mvn compile"
+                sh "mvn test"
+                //sh "mvn package"
+            }
+        }
+        stage('Validate Dockerfile') {
+            steps {
+                echo "======================//Validating Dockerfile//============================="
+                sh 'docker run --rm -i hadolint/hadolint < Dockerfile > output.txt'
+                sh 'docker run --rm -i hadolint/hadolint < Dockerfile' //recommended
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                echo "========================//building docker image//==============================="
+                script {
+                    sh 'docker build . --file Dockerfile --tag e-cart-backend'
+                    sh "docker tag e-cart-backend ash414/e-cart-backend:V1.0"
+                }
+            }
+        }
+        stage('Docker Hub Login') {
+            steps {
+                echo "========================//Logging in to dockerhub//==============================="
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                echo "========================//pushing docker image//==============================="
+                sh 'docker push ash414/e-cart-backend:V1.0'
+            }
+        }
+        // Uncomment and configure the following stage for deployment if needed
+        // stage('Deploy to Azure VM') {
+        //     steps {
+        //         script {
+        //             sshagent(credentials: ["${AZURE_VM_SSH_CREDENTIALS_ID}"]) {
+        //                 sh """
+        //                     ssh -o StrictHostKeyChecking=no ${AZURE_VM_USER}@${AZURE_VM_HOST} '
+        //                     docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE} &&
+        //                     docker stop $(docker ps -q --filter "ancestor=${DOCKER_REGISTRY}/${DOCKER_IMAGE}") || true &&
+        //                     docker run -d ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
+        //                     '
+        //                 """
+        //             }
+        //         }
+        //     }
+        // }
+    }
+    post {
+        always {
+            sh 'docker logout'
+            cleanWs()
+        }
+        success {
+            echo 'The Build has Succeeded'
+        }
+        failure {
+            echo 'The Build has Failed'
+        }
+    }
+}
+
+
+
+// post {
+//         always {
+//             echo 'This will always run'
+//         }
+//         success {
+//             echo 'This will run only if successful'
+//         }
+//         failure {
+//             echo 'This will run only if failed'
+//         }
+//         changed {
+//             echo 'This will run only if the state of the Pipeline has changed'
+//             echo 'Example : if the Pipeline was previously failing but is now successful'
+//         }
+//     }
+
+
+
+// stage('Deploy to DockerHub (Optional)') {
+//     steps {
+//         script {
+//             def imageName = "ash414/e-cart-backend:$(env.BUILD_NUMBER)"
+//             def dockerHubCredentialsId = 'dockerhub-credentials' // Replace with your Docker Hub credentials ID
+//             sh "docker login -u ${dockerHubCredentialsId} -p \$docker_password"
+//             sh "docker tag backend ${imageName}"
+//             sh "docker push ${imageName}"
+//         }
+//     }
+// }
+// stage('Build') {
+//     steps {
+//         sh "mvn -Dmaven.test.failure.ignore=true clean package"
+//     }
+//     post {
+//         success {
+//             junit '**/target/surefire-reports/TEST-*.xml'
+//             archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: true
+//         }
+//     }
+// }

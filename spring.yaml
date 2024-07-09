@@ -1,0 +1,43 @@
+---
+# Spring Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-app
+  template:
+    metadata:
+      labels:
+        app: spring-app
+    spec:
+      containers:
+      - name: spring-container
+        image: ash414/backend:v1.0
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: media-storage
+          mountPath: /app/media
+      volumes:
+      - name: media-storage
+        persistentVolumeClaim:
+          claimName: spring-media-pvc
+---
+# Spring Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-service
+  labels:
+    app: spring-app
+spec:
+  selector:
+    app: spring-app
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000

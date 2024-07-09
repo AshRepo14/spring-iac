@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - spring.yaml
+  - nginx.yaml
+
+commonLabels:
+  app.kubernetes.io/name: my-spring
+  app.kubernetes.io/instance: my-spring-dev
+  app.kubernetes.io/version: v1.0

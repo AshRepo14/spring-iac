@@ -1,0 +1,60 @@
+---
+# Nginx Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-app
+  labels:
+    app: nginx-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:
+        app: nginx-app
+    spec:
+      containers:
+      - name: nginx-container
+        image: ash414/nginx-app4:v1.0
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: media-storage
+          mountPath: /media
+      volumes:
+      - name: media-storage
+        persistentVolumeClaim:
+          claimName: django-media-pvc
+---
+# Nginx Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  labels:
+    app: nginx-app
+spec:
+  selector:
+    app: nginx-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+# NodePort Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  type: NodePort
+  selector:
+    app: nginx-app
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30007
+    
