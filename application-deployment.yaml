@@ -54,11 +54,7 @@ spec:
     spec:
       containers:
       - name: nginx-container
-        # Not working images
-        # image: a-nginx:latest
-        # image: ash414/nginx:v1.0v
-        # image: ash414/nginx-dj4:v1.0
-        image: ash414/nginx-app4:v1.0
+        image: nginx-app4:v1.0
         ports:
         - containerPort: 80
 ---
