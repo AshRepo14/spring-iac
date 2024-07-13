@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: nginx-container
-        image: ash414/nginx-app4:v1.0
+        image: nginx-app4:v1.0
         ports:
         - containerPort: 80
         volumeMounts:
